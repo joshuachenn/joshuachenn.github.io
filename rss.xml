@@ -1,0 +1,1321 @@
+<?xml version="1.0" encoding="utf-8"?><rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title>El Capitain</title><link>https://joshuachenn.github.io/</link><description>千里之行，始于足下</description><generator>Hugo 0.167.0 https://gohugo.io/</generator><language>zh-CN</language><managingEditor>reuixiy@gmail.com (reuixiy)</managingEditor><webMaster>reuixiy@gmail.com (reuixiy)</webMaster><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><lastBuildDate>Tue, 06 Oct 2026 00:30:24 +0800</lastBuildDate><atom:link rel="self" type="application/rss+xml" href="https://joshuachenn.github.io/rss.xml"/><item><title>
+PE格式07</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/</guid><pubDate>Fri, 08 May 2020 13:40:43 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="导出表"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/#导出表" class="anchor-link" aria-label="导出表"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;导出表&lt;/h3&gt;
+&lt;p&gt;导出表与导入表相反，是描述导出表所在的PE文件向其他程序提供的可供调用的函数情况。PE中的导出表存在于动态链接库文件里。导出表的主要作用是将PE中存在的函数引出到外部，以便其他人可以使用这些函数，实现代码的重用。&lt;/p&gt;
+&lt;p&gt;动态库的代码如下：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;public g_szData
+.data
+g_szData dd 87654093h
+.code
+ShowMsg proc hWnd:HWND, lpText:LPVOID, lpCaption:LPVOID, wType:WORD
+invoke MessageBox, hWnd, lpText, lpCaption, wType
+ret
+ShowMsg endp
+MyAdd proc n1:DWORD, n2:DWORD
+mov eax, n1
+add eax, n2
+ret
+MyAdd endp
+MySub proc n1:DWORD, n2:DWORD
+mov eax, n1
+sub eax, n2
+ret
+MySub endp
+DllEntry proc _hInstance, _dwReason, _dwReserved
+mov eax, TRUE
+ret
+DllEntry endp
+end DllEntry
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;使用DEF文件导出以下函数和变量：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;EXPORTS
+ShowMsg
+MyAdd
+MySub
+g_szData
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;编译链接后获得动态库dll文件，将该dll文件使用WinHex打开，并且参照数据目录（DataDirectory）成员的结构体：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508003210861.png" alt="image-20200508003210861"&gt;&lt;/p&gt;
+&lt;p&gt;数据目录的第0项也存放了一个IMAGE_DATA_DIRECTORY结构体：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_DATA_DIRECTORY&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;VirtualAddress&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Size&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_DATA_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_DATA_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;而该结构体的VirtualAddress成员（RVA）指向的就是IMAGE_EXPORT_DIRECTORY结构体，存放了导出表的详细数据：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_EXPORT_DIRECTORY&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Characteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;TimeDateStamp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MajorVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MinorVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Base&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfFunctions&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfNames&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;AddressOfFunctions&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA from base of image
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;AddressOfNames&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA from base of image
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;AddressOfNameOrdinals&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA from base of image
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_EXPORT_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_EXPORT_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;前四个参数可以忽略；Name成员为指向该导出表的文件名字符串，使用WinHex查看刚才动态库的dll文件，查看其PE结构：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508004256867.png" alt="image-20200508004256867"&gt;&lt;/p&gt;
+&lt;p&gt;导出表的RVA=0x2060，而0x2060位于第二个节区，那么对应FA为660：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508004454542.png" alt="image-20200508004454542"&gt;&lt;/p&gt;
+&lt;p&gt;这里Name成员的值为0x20B0，FA就是0x6B0，可以知道这个文件名为“asmdll.dll”；接着是Base成员，函数以序号（即Ordinal）形式给出时，将序号减去Base成员的值就获得了函数在AddressOfFunctions成员中的索引，这里的Base为0x1：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508012332763.png" alt="image-20200508012332763"&gt;&lt;/p&gt;
+&lt;p&gt;NumberOfFunctions和NumberOfNames分别是该动态库提供的函数数量与函数名数量，两者可以不一样，因为dll库提供方可以提供匿名函数，即导出函数时后面以“noname”关键字声明，这里都是4个：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508012416878.png" alt="image-20200508012416878"&gt;&lt;/p&gt;
+&lt;p&gt;AddressOfFunctions是所有导出函数RVA的列表，每个函数都有确定的索引，通过索引获取函数的RVA：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508012925129.png" alt="image-20200508012925129"&gt;&lt;/p&gt;
+&lt;p&gt;4个函数RVA地址，分别是0x101B、0x1028、0x1000、0x3000，前三个换算成FA分别是0x41B、0x428、0x400，查看WinHex下的动态库文件相应偏移处：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508013343651.png" alt="image-20200508013343651"&gt;&lt;/p&gt;
+&lt;p&gt;分别对应了三个函数机器代码的首地址，最后一个换算成FA是0x800，该函数并非函数而是全局变量：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508013504203.png" alt="image-20200508013504203"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508013524094.png" alt="image-20200508013524094"&gt;&lt;/p&gt;
+&lt;p&gt;AddressOfNames是所有导出函数名列表，通过索引获取函数名，这里该值为0x2098，换算成FA就是0x698：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508013723819.png" alt="image-20200508013723819"&gt;&lt;/p&gt;
+&lt;p&gt;AddressOfNameOrdinals是所有导出函数的序号表的地址，这里是0x20A8，那么FA就是0x6A8：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F07/image-20200508014708273.png" alt="image-20200508014708273"&gt;&lt;/p&gt;
+&lt;h3 id="获取函数地址过程"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/#获取函数地址过程" class="anchor-link" aria-label="获取函数地址过程"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;获取函数地址过程&lt;/h3&gt;
+&lt;p&gt;如果要在asmdll.dll的动态库内找一个名为“ShowMsg”的函数，首先定位到导出表，然后获取AddressOfNames，通过给出的函数名地址，一一匹配函数名是否是“ShowMsg”，如果匹配，则可以获取该函数名在AddressOfNames中的下标索引，这里获取到的索引是0x2，接着去AddressOfNameOrdinals中查找下表对应的序号，这里通过0x2获取到的序号也是0x2，然后通过序号作为AddressOfFunctions的下标索引获取“ShowMsg”的函数地址。&lt;/p&gt;
+&lt;h3 id="代码如下"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/#代码如下" class="anchor-link" aria-label="代码如下"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;代码如下&lt;/h3&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;MyGetProcAddress proc uses esi ebx edi hModule:HMODULE, lpProcName:LPCSTR
+; check
+mov esi, hModule
+assume esi : ptr IMAGE_DOS_HEADER
+add esi, [esi].e_lfanew
+assume esi : ptr IMAGE_NT_HEADERS
+lea esi, [esi].OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT * sizeof IMAGE_DATA_DIRECTORY]
+assume esi : ptr IMAGE_DATA_DIRECTORY
+mov esi, [esi].VirtualAddress
+add esi, hModule
+assume esi : ptr IMAGE_EXPORT_DIRECTORY
+mov eax, lpProcName
+and eax, 0ffff0000h
+.if eax == 0
+; is ordinal
+mov eax, lpProcName
+sub eax, [esi].nBase
+.if eax &amp;gt; [esi].NumberOfFunctions
+xor eax, eax
+ret
+.endif
+.else
+; is name
+mov eax, lpProcName
+mov ebx, [esi].AddressOfNames
+add ebx, hModule
+xor ecx, ecx
+.while ecx &amp;lt; [esi].NumberOfNames
+mov edi, [ebx + ecx * dword]
+add edi, hModule
+push ecx
+invoke MyStrCmp, lpProcName, edi
+pop ecx
+.if eax == 0
+.break
+.endif
+inc ecx
+.endw
+.if ecx &amp;gt;= [esi].NumberOfNames
+; no find
+xor eax, eax
+ret
+.endif
+mov ebx, [esi].AddressOfNameOrdinals
+add ebx, hModule
+movzx eax, word ptr [ebx + ecx * sizeof word]
+.endif
+mov ebx, [esi].AddressOfFunctions
+add ebx, hModule
+mov eax, [ebx + eax * sizeof dword]
+.if eax == NULL
+xor eax, eax
+ret
+.endif
+add eax, hModule
+ret
+MyGetProcAddress endp
+start:
+invoke LoadLibrary, offset g_szDllName
+;check it
+;7f7h
+invoke MyGetProcAddress, eax, offset g_szFunName
+push MB_OK
+push offset g_szFunName
+push offset g_szDllName
+push NULL
+call eax
+invoke ExitProcess,0
+ret
+end start
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F07/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式06</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/</guid><pubDate>Fri, 08 May 2020 13:40:34 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="动态装载"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/#动态装载" class="anchor-link" aria-label="动态装载"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;动态装载&lt;/h3&gt;
+&lt;p&gt;这一节我们将动态装载一个可执行文件到内存中，目的是在另一个可执行文件中运行被动态装载了PE结构等相关数据的程序。&lt;/p&gt;
+&lt;p&gt;原理是利用PE结构，将PE结构的头部信息从源可执行文件的FA装载入另一个已经在运行状态的进程虚拟内存中，亦即VA中，除了头部信息之外，我们还要做的是修改IAT项数据，因为要修改IAT数据，我们还要获取导入表相关信息，获取源可执行文件的节表项，通过节表获取需要加载的动态库，然后通过导入表项获取每个节要导入的函数VA，并写入到进程虚拟内存的IAT表项指向的地址下。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F06/image-20200507030154258.png" alt="image-20200507030154258"&gt;&lt;/p&gt;
+&lt;p&gt;运行fake.exe时，首先从xx.exe的目标可执行文件下读取头部数据、节表数据、导入表数据装载到fake.exe的内存中，置于内存什么地方呢？这个最好还是原封不动，与目标可执行文件加载到内存中最好一致，否则很可能就无法运行。所以首先得分析原可执行文件的ImageBase，并且还需要知道SizeOfImage，也就是程序运行起来后程序镜像在虚拟内存中的大小。有了这些信息之后，在我们的fake.exe的虚拟内存中就要为目标程序的执行腾出空间，最起码腾出SizeOfImage大小的空间的话在汇编下可以使用org SizeOfImage来指明，并且会初始化为0，并且还要设定提前占用基址（ImageBase），这是给目标程序占用的，这样的话我们编写的代码就会在ImageBase+SizeOfImage之后，在ImageBase到ImageBase+SizeOfImage，将在我们做完准备工作后给目标程序使用。&lt;/p&gt;
+&lt;h3 id="准备工作"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/#准备工作" class="anchor-link" aria-label="准备工作"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;准备工作&lt;/h3&gt;
+&lt;p&gt;在代码段的最上部腾出IMAGE_SIZE空间：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;.code
+org IMAGE_SIZE
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;并且设置程序基址，在链接器选项下设置，假设要设置的程序基址为0x400000（与目标程序的基址一致）：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;/base:0x400000
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;初始化时首先修改这部分代码数据可读写可执行，因为我们要在这块区域写入目标程序的数据：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;start proc
+LOCAL @hInst:HMODULE
+LOCAL @dwOld:DWORD
+invoke GetModuleHandle, NULL
+mov @hInst, eax
+invoke VirtualProtect, @hInst, IMAGE_SIZE, PAGE_EXECUTE_READWRITE, addr @dwOld
+; check it
+invoke LoadPE, @hInst, offset g_szFilePath
+ret
+start endp
+end start
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;然后编写LoadPE函数来加载目标可执行文件的PE头到我们程序的虚拟内存中，需要注意FA与VA的转换，这个函数将目标可执行文件映射到内存并获取在内存中的地址，下一步通过这个地址获取PE结构信息，写入到我们程序的虚拟内存中：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;LoadPE proc uses esi lpBase:LPVOID, szFilePath:LPSTR
+LOCAL @hFile:HANDLE
+LOCAL @hMapFile:HANDLE
+LOCAL @lpMapAddress:LPVOID
+mov @hFile, INVALID_HANDLE_VALUE
+xor eax, eax
+mov @hMapFile, eax
+mov @lpMapAddress, eax
+invoke CreateFile, szFilePath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL
+.if eax == INVALID_HANDLE_VALUE
+jmp EXIT_PROC
+.endif
+mov @hFile, eax
+invoke CreateFileMapping, @hFile, NULL, PAGE_READONLY, 0, 0, NULL
+.if eax == NULL
+jmp EXIT_PROC
+.endif
+mov @hMapFile, eax
+invoke MapViewOfFile, @hMapFile, FILE_MAP_READ, 0, 0, 0
+.if eax == NULL
+jmp EXIT_PROC
+.endif
+mov @lpMapAddress, eax
+invoke IsPeFile, @lpMapAddress
+.if eax == FALSE
+jmp EXIT_PROC
+.endif
+invoke _Loader, lpBase, @lpMapAddress
+EXIT_PROC:
+.if @lpMapAddress != NULL
+invoke UnmapViewOfFile, @lpMapAddress
+.if eax == NULL
+; run error proc
+.endif
+mov @lpMapAddress, NULL
+.endif
+.if @hMapFile != NULL
+invoke CloseHandle, @hMapFile
+mov @hMapFile, NULL
+.endif
+.if @hFile != INVALID_HANDLE_VALUE
+invoke CloseHandle, @hFile
+mov @hFile, INVALID_HANDLE_VALUE
+.endif
+ret
+LoadPE endp
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;开始写入头部数据，节表数据与导入表数据：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;_Loader proc uses esi ebx lpDst:LPVOID, lpSrc:LPVOID
+LOCAL @dwNumberOfSections:DWORD
+LOCAL @dwSizeOfOptionalHeader:DWORD
+LOCAL @lpEntryPoint:LPVOID
+LOCAL @dwSizeOfHeaders:DWORD
+LOCAL @lpImport:LPVOID
+LOCAL @lpDataDirectory:LPVOID
+xor eax, eax
+mov @dwNumberOfSections, eax
+mov @dwSizeOfOptionalHeader, eax
+mov @lpEntryPoint, eax
+mov @dwSizeOfHeaders, eax
+mov @lpImport, eax
+mov @lpDataDirectory, eax
+mov esi, lpSrc
+assume esi : ptr IMAGE_DOS_HEADER
+add esi, [esi].e_lfanew
+assume esi : ptr IMAGE_NT_HEADERS
+movzx eax, [esi].FileHeader.NumberOfSections
+mov @dwNumberOfSections, eax
+movzx eax, [esi].FileHeader.SizeOfOptionalHeader
+mov @dwSizeOfOptionalHeader, eax
+mov eax, [esi].OptionalHeader.AddressOfEntryPoint
+add eax, lpDst
+mov @lpEntryPoint, eax
+mov eax, [esi].OptionalHeader.SizeOfHeaders
+mov @dwSizeOfHeaders, eax
+lea eax, [esi].OptionalHeader.DataDirectory
+mov @lpDataDirectory, eax
+lea eax, [esi].OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT * sizeof IMAGE_DATA_DIRECTORY]
+assume eax : ptr IMAGE_DATA_DIRECTORY
+mov eax, [eax].VirtualAddress
+add eax, lpDst
+mov @lpImport, eax ; get import table in memory address
+;拷贝整个头部信息
+invoke crt_memcpy, lpDst, lpSrc, @dwSizeOfHeaders
+lea ebx, [esi].OptionalHeader
+add ebx, @dwSizeOfOptionalHeader
+assume ebx : ptr IMAGE_SECTION_HEADER
+xor ecx, ecx
+.while ecx &amp;lt; @dwNumberOfSections
+.if [ebx].SizeOfRawData != 0
+mov esi, [ebx].PointerToRawData
+add esi, lpSrc
+mov edi, [ebx].VirtualAddress
+add edi, lpDst
+push ecx
+;拷贝节表数据
+invoke crt_memcpy, edi, esi, [ebx].SizeOfRawData
+pop ecx
+.endif
+add ebx, sizeof IMAGE_SECTION_HEADER
+inc ecx
+.endw
+;导入表
+invoke ImportProc, lpDst, @lpImport
+jmp @lpEntryPoint
+ret
+_Loader endp
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;接着通过导入表剔除无效的导入表项，并加载有效导入表项的dll，然后通过OriginalFirstThunk或者FirstThunk获取要加载的函数的地址：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;ImportProc proc uses esi hInst:LPVOID, lpImport:LPVOID
+LOCAL @hDllInst : HMODULE
+LOCAL @lpApiInfo:LPVOID
+LOCAL @lpIAT:LPVOID
+xor eax, eax
+mov @hDllInst, eax
+mov @lpApiInfo, eax
+mov @lpIAT, eax
+mov esi, lpImport
+assume esi : ptr IMAGE_IMPORT_DESCRIPTOR
+.while [esi].Name1 != NULL
+mov eax, [esi].FirstThunk
+add eax, hInst
+.if dword ptr [eax] == NULL ; 处理无效的导入表项
+add esi, sizeof IMAGE_IMPORT_DESCRIPTOR
+.continue
+.endif
+mov eax, [esi].Name1
+add eax, hInst
+invoke LoadLibrary, eax
+; check it
+mov @hDllInst, eax
+mov eax, [esi].OriginalFirstThunk
+.if eax == NULL
+mov eax, [esi].FirstThunk
+.endif
+add eax, hInst
+mov @lpApiInfo, eax
+mov eax, [esi].FirstThunk
+add eax, hInst
+mov @lpIAT, eax
+invoke WriteToIAT, hInst, @hDllInst, @lpApiInfo, @lpIAT
+add esi, sizeof IMAGE_IMPORT_DESCRIPTOR
+.endw
+ret
+ImportProc endp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F06/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式05</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/</guid><pubDate>Fri, 08 May 2020 13:40:26 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="通过导入表项注入dll"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/#通过导入表项注入dll" class="anchor-link" aria-label="通过导入表项注入dll"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;通过导入表项注入Dll&lt;/h3&gt;
+&lt;p&gt;假设有WinSDK程序如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;#34;stdafx.h&amp;#34;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#include&lt;/span&gt; &lt;span class="cpf"&gt;&amp;#34;resource.h&amp;#34;&lt;/span&gt;&lt;span class="cp"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;APIENTRY&lt;/span&gt; &lt;span class="nf"&gt;WinMain&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;HINSTANCE&lt;/span&gt; &lt;span class="n"&gt;hInstance&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;HINSTANCE&lt;/span&gt; &lt;span class="n"&gt;hPrevInstance&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;LPSTR&lt;/span&gt; &lt;span class="n"&gt;lpCmdLine&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;nCmdShow&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;MessageBox&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;NULL&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;Hello World!&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s"&gt;&amp;#34;Hello&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;MB_OK&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;该程序仅仅在运行时调用MessageBox函数弹一个框，编译运行后使用WinHex查看该生成的可执行文件，定位到导入表的RVA：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506012036079.png" alt="image-20200506012036079"&gt;&lt;/p&gt;
+&lt;p&gt;RVA值为0x2A000，继续查看该可执行文件的节表项，查看该RVA位于哪个节下，从而获取到FA：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506012221884.png" alt="image-20200506012221884"&gt;&lt;/p&gt;
+&lt;p&gt;其值位于.idata节下，且节表项的RVA(0x2A000)的FA为0x28000，那么就说明0x28000下存放的就是导入表数据，继续查看之：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506012814681.png" alt="image-20200506012814681"&gt;&lt;/p&gt;
+&lt;p&gt;阴影高亮部分就是导入表数据，根据前面的知识一个导入表项栈0x14个字节，剔除最后一项全为0项的尾项，那么这里有2个导入表项，表明该程序从2个动态库里面导入了函数，现在我们要注入Dll的函数到该程序中，所以我们还要插入一个导入表项，但是这里空间不够了，如果继续填充这块数据，就会使得程序后面的数据遭到破坏，因此这里我们选择在0x28000~0x28FFF之前找找看有没有一块足够大的空间用来存放新的导入表项即额外数据（动态库名、函数名等数据），在0x28A20处有大量空白数据可以填入：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506013306955.png" alt="image-20200506013306955"&gt;&lt;/p&gt;
+&lt;p&gt;所以这里我们将0x28000下的2*0x14个数据全部填充到0x28A20处：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506013427028.png" alt="image-20200506013427028"&gt;&lt;/p&gt;
+&lt;p&gt;要让程序使用我们新开辟的导入表数据，还得修改PE头的数据目录结构体的导入表地址为该处，但是该处是FA，需要修改为RVA程序才可以使用，0x28000对应的RVA为0x2A000，那么0x28A20的RVA就是0x2AA20：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506013644951.png" alt="image-20200506013644951"&gt;&lt;/p&gt;
+&lt;p&gt;修改后程序依然可以正常运行。&lt;/p&gt;
+&lt;p&gt;接下来需要往新的导入表后面添加我们的Dll库对应的函数了。&lt;/p&gt;
+&lt;p&gt;首先编写Dll库的代码，并导出：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;.code
+ShowMsg proc hWnd:HWND, lpText:LPVOID, lpCaption:LPVOID, wType:WORD
+invoke MessageBox, hWnd, lpText, lpCaption, wType
+ret
+ShowMsg endp
+DllEntry proc _hInstance, _dwReason, _dwReserved
+mov eax, TRUE
+ret
+DllEntry endp
+end DllEntry
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;构建后生成Dll文件，并拷贝到可执行文件的目录下（可执行文件首先搜索当前目录）：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506013825109.png" alt="image-20200506013825109"&gt;&lt;/p&gt;
+&lt;p&gt;然后继续使用WinHex添加导入表项，导入表项的结构体如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;union&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Characteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 0 for terminating null import descriptor
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;OriginalFirstThunk&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA to original unbound IAT (PIMAGE_THUNK_DATA)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;DUMMYUNIONNAME&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;TimeDateStamp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 0 if not bound,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// -1 if bound, and real date\time stamp
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// O.W. date/time stamp of DLL bound to (Old BIND)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;ForwarderChain&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// -1 if no forwarders
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;FirstThunk&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA to IAT (if bound this IAT has actual addresses)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中第一个成员可以忽略；第二三个成员也可以忽略；Name字段为Dll库名的指针，可以选择在导入表数据的头部添加这些数据：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506014113798.png" alt="image-20200506014113798"&gt;&lt;/p&gt;
+&lt;p&gt;Dll名的FA为0x28A00，继续转为RVA=0x2AA00，以及函数名的FA为0x28A10，那么其RVA就是0x2AA10，最后一个成员为IAT表项，还是找个空白的地方，IAT表项可以暂时存放函数名地址，并且IAT表项换算成RVA后存入结构体的最后一个成员，最后的导入表项就为：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506014527340.png" alt="image-20200506014527340"&gt;&lt;/p&gt;
+&lt;p&gt;到这里我们就把准备工作做好了，因为我们要注入的函数是MessageBox，这里我们通过OD修改程序调用MessageBox函数处的代码，将调用该函数修改为我们的函数；程序加载到内存中后，会将我们函数的VA存放到FA为0x289F0的地址下，转换为RVA后为0x2A9F0，加上ImageBase后为0x42A9F0。&lt;/p&gt;
+&lt;p&gt;修改源程序调用MessageBox函数如下：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506010933698.png" alt="image-20200506010933698"&gt;&lt;/p&gt;
+&lt;p&gt;VA为0x42A9F0下存放的是我们dll的ShowMsg函数地址，即IAT表下ShowMsg函数的地址：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506011025898.png" alt="image-20200506011025898"&gt;&lt;/p&gt;
+&lt;p&gt;将上面的MessageBox的地址替换为该地址：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506011242743.png" alt="image-20200506011242743"&gt;&lt;/p&gt;
+&lt;p&gt;替换后Dll的ShowMsg函数就注入到程序中去了，保存该补丁到新可执行文件下后双击运行该文件试试：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506011512520.png" alt="image-20200506011512520"&gt;&lt;/p&gt;
+&lt;p&gt;OD打开该可执行文件查看反汇编：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506011607119.png" alt="image-20200506011607119"&gt;已经成功注入并且可以运行了。&lt;/p&gt;
+&lt;h3 id="最小可执行文件"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/#最小可执行文件" class="anchor-link" aria-label="最小可执行文件"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;最小可执行文件&lt;/h3&gt;
+&lt;p&gt;复制DOS头和NT头（不包含数据目录）到新的可执行文件下，并且将不重要的数据置A（这些数据可以供我们使用）：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506024747822.png" alt="image-20200506024747822"&gt;&lt;/p&gt;
+&lt;p&gt;修改了SectionAlignment和FileAlignmet都为4（XP系统下可以，但是win7/10是不行的），然后剪切NT头部到第4个字节后粘贴：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F05/image-20200506025004510.png" alt="image-20200506025004510"&gt;&lt;/p&gt;
+&lt;p&gt;DOS头部包含了NT头部部分数据，并且Dos头部最后一个成员表明NT头的开始处，值为0x4，也就是NT头部从0x4处开始，且该值就是内存对齐值。&lt;/p&gt;
+&lt;h3 id="无效的导入表项"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/#无效的导入表项" class="anchor-link" aria-label="无效的导入表项"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;无效的导入表项&lt;/h3&gt;
+&lt;p&gt;操作系统装载可执行文件时首先检查导入表项的IAT成员是否为0，如果不为0，就去检查IAT指向的目标是否有效（为0就无效），如果有效，就去找动态库名开始LoadLibrary，接着去遍历函数名表，通过GetProcAddress一个个加载函数名的VA到IAT表下；如果无效，就Continue继续加载下一个导入表项，并且程序不会装载该Dll了，但是有些调试器还是会去装载该Dll的导出函数，这就可以导致反调试，实际上如果系统不去装载该Dll，那么系统就不会去装载该Dll的导出函数，但是调试器却去装载了，那么就说明被调试了。OD是有这个问题的，不过后面海峰插件解决了这个问题。&lt;/p&gt;
+&lt;p&gt;但是如果&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F05/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式04</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/</guid><pubDate>Fri, 08 May 2020 13:40:15 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="一个简单的壳"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/#一个简单的壳" class="anchor-link" aria-label="一个简单的壳"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;一个简单的壳&lt;/h3&gt;
+&lt;p&gt;未脱壳的程序代码：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;.data
+g_szHello db &amp;#39;Hello World!&amp;#39;, 0
+g_szTitle db &amp;#39;Hello&amp;#39;, 0
+.code
+_main:
+invoke MessageBox, NULL, offset g_szHello, offset g_szTitle, MB_OK
+invoke ExitProcess, 0
+ret
+end _main
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;编译链接成可执行文件后使用ida打开：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502000610677.png" alt="image-20200502000610677"&gt;&lt;/p&gt;
+&lt;p&gt;使用winhex打开可执行文件，定位到代码段(.text)后，对IMAGE_SECTION_HEADER头部指定的VirtualSize个字节的每一个字节异或上0x90后保存，再使用ida打开查看反汇编：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502000813979.png" alt="image-20200502000813979"&gt;&lt;/p&gt;
+&lt;p&gt;这个时候代码已经不能运行了，因为这个时候代码字节已经被简单加密过了，使用OllyDbg打开也是一样的效果：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502000903186.png" alt="image-20200502000903186"&gt;&lt;/p&gt;
+&lt;p&gt;如果希望能正确执行代码，则有必要对代码字节进行解密，就需要再异或一遍0x90，查看代码段的RVA和FA：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502001305112.png" alt="image-20200502001305112"&gt;&lt;/p&gt;
+&lt;p&gt;代码段的RVA在0x1000处，FA在0x400，代码字节数为0x28，查看可执行文件0x400的位置：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502001425869.png" alt="image-20200502001425869"&gt;&lt;/p&gt;
+&lt;p&gt;如何让壳程序可以正常运行，而且还不能被正常调试呢？运行前程序肯定是壳状态，可以在启动时对启动处的代码做解密，解密完之后再跳回到原程序入口点OEP。机器字节码从0x400到0x428共占用0x28个字节，因此我们可以选择在0x430处开始编写脱壳程序，并在脱完壳之后跳回到程序入口点0x401000处执行程序。&lt;/p&gt;
+&lt;p&gt;文件的0x430处加载到内存中的位置应该在0x401030处，使用x64dbg修改程序代码：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502003934558.png" alt="image-20200502003934558"&gt;这段代码为手动添加，功能是从程序入口处0x401000处开始遍历0x28个字节，将每个字节异或，异或完成后跳转到0x401000处的位置开始执行程序，所以我们需要将程序的入口点位置修改为0x401030，那么RVA就是0x1030，原可执行文件的VirtualAddress需要从0x1000修改为0x1030：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502004245855.png" alt="image-20200502004245855"&gt;&lt;/p&gt;
+&lt;p&gt;并且还需要将手动增加的字节码添加到可执行文件的0x430处：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502004353581.png" alt="image-20200502004353581"&gt;&lt;/p&gt;
+&lt;p&gt;也可以使用x64dbg右键-&amp;gt;补丁，全选后导出补丁文件后，我们手动在x64dbg的0x401030处新增的代码就会自动填充到新导出补丁文件的0x430处：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502004552852.png" alt="image-20200502004552852"&gt;&lt;/p&gt;
+&lt;p&gt;另外还需要注意的是我们的补丁代码修改了代码段的数据，而代码段默认的内存属性是可读可执行，那么就有必要修改代码段的内存属性，这里为方便起见，直接修改PE头代码段的characteristics属性为0xF0：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502005258597.png" alt="image-20200502005258597"&gt;&lt;/p&gt;
+&lt;p&gt;使用x64dbg调试这个新的补丁可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502004653383.png" alt="image-20200502004653383"&gt;&lt;/p&gt;
+&lt;p&gt;可以发现入口地址已经被修改为我们的代码地址，执行完这段代码后将0x401000处的字节码序列异或回0x90，并异或完成之后就跳回到了0x401000处开始执行代码，双击这个补丁文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502004826961.png" alt="image-20200502004826961"&gt;&lt;/p&gt;
+&lt;p&gt;但是未经脱壳的源程序是无法运行的。&lt;/p&gt;
+&lt;h3 id="内存dump"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/#内存dump" class="anchor-link" aria-label="内存dump"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;内存dump&lt;/h3&gt;
+&lt;p&gt;如果要调试经过加壳了的代码，但是因为入口点EP已经不是真正的入口点OEP了，而是变成了解密真正入口点代码的代码入口点，如果解密代码很短小，那很好办，但是解密代码很多很复杂的话光看反汇编已经不能解决问题了。&lt;/p&gt;
+&lt;p&gt;假设这个时候知道OEP在哪，我们就可以调试运行加壳程序，比如上面的那个加壳程序：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502132608045.png" alt="image-20200502132608045"&gt;&lt;/p&gt;
+&lt;p&gt;此时EP指向0x401030，而这里我们知道OEP是0x401000，因为最后这段代码跳回的就是0x401000，而一般获取到ImageBase之后，默认的OEP就是ImageBase+0x1000（一个内存页），去该地址看看反汇编：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502132801976.png" alt="image-20200502132801976"&gt;&lt;/p&gt;
+&lt;p&gt;这是经过加密的入口点代码，断点断在0x401041处后F9运行代码，继续查看反汇编：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502132850825.png" alt="image-20200502132850825"&gt;&lt;/p&gt;
+&lt;p&gt;此时0x401000处的代码字节已经经过解密了，也就是此时在内存中的程序代码是可执行程序的代码，打开WinHex，选择打开RAM，选择调试运行的程序查看0x401000处的数据：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502141842876.png" alt="image-20200502141842876"&gt;&lt;/p&gt;
+&lt;p&gt;可执行程序的代码是经过解密且可执行的，这个时候我们可以新建一个空白的文件，暂且命名为PE_dumpUnpack.exe，我们希望将内存中的有效代码数据复制到这个可执行文件当中，这一过程就叫&lt;strong&gt;内存dump&lt;/strong&gt;。dump前还需要明确哪些数据需要dump到新的空白可执行文件当中，为了程序被操作系统认可，首先得有PE头，PE头一般在ImageBase处，这里就是0x40000：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502143659416.png" alt="image-20200502143659416"&gt;&lt;/p&gt;
+&lt;p&gt;头的大小是0x400个字节，首先将0x400000处开始的0x400个字节复制到新的可执行文件当中，接着将所有节的数据从内存中拷贝到可执行文件中：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502145049910.png" alt="image-20200502145049910"&gt;&lt;/p&gt;
+&lt;p&gt;红框表示节在内存中的RVA，蓝框标出的是在文件中的FA，也就是说要从ImageBase+RVA处的内从拷贝字节到FA处，拷贝多少字节呢？SectionHeader的SizeOfRawData有指明，这里都是0x200，依次将数据按照此规则拷入到新的可执行文件，另外还要修改OEP为0x1000而不是解密代码的EP–0x1030：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502155854764.png" alt="image-20200502155854764"&gt;&lt;/p&gt;
+&lt;p&gt;需要注意的是使用OllyICE下断点调试某程序，同时用WinHex打开该程序，在WinHex下复制断点处字节码时会有0xcc，这是因为调试器下断点使用的0xcc下断点，自然，复制的数据是有误的。因此，如果要在内存中dump数据，有必要将断点清除：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502112658987.png" alt="image-20200502112658987"&gt;&lt;/p&gt;
+&lt;p&gt;保存后，双击新的可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502160040566.png" alt="image-20200502160040566"&gt;&lt;/p&gt;
+&lt;p&gt;这样，就完成了脱壳文件的手工dump过程。&lt;/p&gt;
+&lt;p&gt;其实OD有dump插件，可以自动dump脱壳可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502163157867.png" alt="image-20200502163157867"&gt;&lt;/p&gt;
+&lt;p&gt;入口点设置回0x1000，后选择dump就可以了，最后dump出来的可执行文件用010editor看一下：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502161926039.png" alt="image-20200502161926039"&gt;&lt;/p&gt;
+&lt;p&gt;OD调试该程序，会发现程序入口点就在0x401000：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502163305711.png" alt="image-20200502163305711"&gt;&lt;/p&gt;
+&lt;p&gt;但是dump出来的每个节在文件和内存中都以0x1000对齐。&lt;/p&gt;
+&lt;p&gt;运行这个dump程序：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502163339713.png" alt="image-20200502163339713"&gt;&lt;/p&gt;
+&lt;h3 id="内存dump的误区"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/#内存dump的误区" class="anchor-link" aria-label="内存dump的误区"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;内存dump的误区&lt;/h3&gt;
+&lt;p&gt;因为程序需要脱壳，经过脱壳后dump的可执行程序可以对其进行调试。而脱壳前是执行了代码的，而一旦执行了代码可能会修改源程序数据，可能会导致脱壳后程序行为与脱壳前的程序行为不一致。&lt;/p&gt;
+&lt;p&gt;如有下面程序：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;g_num&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="nf"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="kt"&gt;int&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;printf&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;g_num=%d&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;g_num&lt;/span&gt;&lt;span class="o"&gt;++&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;system&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s"&gt;&amp;#34;pause&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;运行程序后：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502175113778.png" alt="image-20200502175113778"&gt;&lt;/p&gt;
+&lt;p&gt;使用OD调试运行该可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502175207459.png" alt="image-20200502175207459"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502175233049.png" alt="image-20200502175233049"&gt;&lt;/p&gt;
+&lt;p&gt;F9运行程序后dump出可执行程序，双击运行：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502180238859.png" alt="image-20200502180238859"&gt;&lt;/p&gt;
+&lt;p&gt;这是因为执行完程序后dump，dump的全局数据已经被修改了，如果希望跟源程序一样，那么只能将脱壳前的可执行文件的.data节处的数据原封不动地复制到dump出来的.data处，才可以解决这个问题。&lt;/p&gt;
+&lt;h3 id="导入表"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/#导入表" class="anchor-link" aria-label="导入表"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;导入表&lt;/h3&gt;
+&lt;p&gt;前面我们在介绍NT_OPTIONAL_HEADER时还有一项没有讲，那就是最后一项DataDirectory数据目录：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="n"&gt;_IMAGE_OPTIONAL_HEADER&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// Standard fields.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;Magic&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;BYTE&lt;/span&gt; &lt;span class="n"&gt;MajorLinkerVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;BYTE&lt;/span&gt; &lt;span class="n"&gt;MinorLinkerVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfCode&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfInitializedData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfUninitializedData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;AddressOfEntryPoint&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;BaseOfCode&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;BaseOfData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// NT additional fields.
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;//
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;ImageBase&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SectionAlignment&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;FileAlignment&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MajorOperatingSystemVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MinorOperatingSystemVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MajorImageVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MinorImageVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MajorSubsystemVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;MinorSubsystemVersion&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Win32VersionValue&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfImage&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfHeaders&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;CheckSum&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;Subsystem&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;DllCharacteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfStackReserve&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfStackCommit&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfHeapReserve&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfHeapCommit&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;LoaderFlags&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfRvaAndSizes&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;IMAGE_DATA_DIRECTORY&lt;/span&gt; &lt;span class="n"&gt;DataDirectory&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;IMAGE_NUMBEROF_DIRECTORY_ENTRIES&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_OPTIONAL_HEADER32&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_OPTIONAL_HEADER32&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;数据目录由固定16个IMAGE_DATA_DIRECTORY结构体构成一个数组，看看IMAGE_DATA_DIRECTORY结构体：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_DATA_DIRECTORY&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;VirtualAddress&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Size&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_DATA_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_DATA_DIRECTORY&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;数据目录数组的每一个元素有其定义，定义如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_EXPORT 0 &lt;/span&gt;&lt;span class="c1"&gt;// 导出目录
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_IMPORT 1 &lt;/span&gt;&lt;span class="c1"&gt;// 导入目录
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_RESOURCE 2 &lt;/span&gt;&lt;span class="c1"&gt;// 资源目录
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_EXCEPTION 3 &lt;/span&gt;&lt;span class="c1"&gt;// 异常目录
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_SECURITY 4 &lt;/span&gt;&lt;span class="c1"&gt;// Security Directory
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_BASERELOC 5 &lt;/span&gt;&lt;span class="c1"&gt;// Base Relocation Table
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_DEBUG 6 &lt;/span&gt;&lt;span class="c1"&gt;// 调试目录
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// IMAGE_DIRECTORY_ENTRY_COPYRIGHT 7 // (X86 usage)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_ARCHITECTURE 7 &lt;/span&gt;&lt;span class="c1"&gt;// Architecture Specific Data
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_GLOBALPTR 8 &lt;/span&gt;&lt;span class="c1"&gt;// RVA of GP
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_TLS 9 &lt;/span&gt;&lt;span class="c1"&gt;// TLS Directory
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_LOAD_CONFIG 10 &lt;/span&gt;&lt;span class="c1"&gt;// Load Configuration Directory
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT 11 &lt;/span&gt;&lt;span class="c1"&gt;// Bound Import Directory in headers
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_IAT 12 &lt;/span&gt;&lt;span class="c1"&gt;// IAT表
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_DELAY_IMPORT 13 &lt;/span&gt;&lt;span class="c1"&gt;// Delay Load Import Descriptors
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR 14 &lt;/span&gt;&lt;span class="c1"&gt;// COM Runtime descriptor
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;使用WinHex打开用于测试的简单可执行文件，查看位于NumberOfRvaAndSizes字段后SECTION_HEADERS之前的部分就是数据目录：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502233053550.png" alt="image-20200502233053550"&gt;&lt;/p&gt;
+&lt;p&gt;位于第1项的是导入表，其VirtualAddress即RVA是0x2010，Size是0x3C，查节表可以发现0x2010位于第二个节区，第二个节区的文件偏移在0x600处，那么导入表就相应在0x2010 - 0x2000 + 0x600 = 0x610处：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503000049437.png" alt="image-20200503000049437"&gt;&lt;/p&gt;
+&lt;p&gt;尝试把数据目录的第12项抹掉，即把IAT表抹掉，抹掉前源程序代码如下：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200502235658559.png" alt="image-20200502235658559"&gt;&lt;/p&gt;
+&lt;p&gt;抹掉后反汇编依然是这样的，这说明程序的正常运行不依赖IAT表，其实依赖的是第一项的导入表：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503015702212.png" alt="image-20200503015702212"&gt;&lt;/p&gt;
+&lt;p&gt;导入表的RVA是0x2010，导入表的信息在文件偏移FA=0x610处，查看之：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503015900994.png" alt="image-20200503015900994"&gt;&lt;/p&gt;
+&lt;p&gt;导入表的结构体声明如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;union&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Characteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 0 for terminating null import descriptor
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;OriginalFirstThunk&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA to original unbound IAT (PIMAGE_THUNK_DATA)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;DUMMYUNIONNAME&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;TimeDateStamp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 0 if not bound,
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// -1 if bound, and real date\time stamp
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="c1"&gt;// O.W. date/time stamp of DLL bound to (Old BIND)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;ForwarderChain&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// -1 if no forwarders
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;FirstThunk&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// RVA to IAT (if bound this IAT has actual addresses)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="n"&gt;IMAGE_IMPORT_DESCRIPTOR&lt;/span&gt; &lt;span class="n"&gt;UNALIGNED&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_IMPORT_DESCRIPTOR&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;第一个成员是一个联合体，Characteristics成员可以忽略，一般使用OriginalFirstThunk字段，这个字段指向一个包含了一系列结构的数组，指向的数组中的每个结构定义了一个导入函数的信息，最后以一个全0的结构作为结束，简称桥1。指向的数组中每一项为一个结构，此结构名称为IMAGE_THUNK_DATA：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_THUNK_DATA32&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;union&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;ForwarderString&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// PBYTE
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Function&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// PDWORD
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Ordinal&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;AddressOfData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// PIMAGE_IMPORT_BY_NAME
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;u1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_THUNK_DATA32&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;该结构在不同时刻拥有不同的解释，一般有两项解释：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;取成员Ordinal，此时最高位为0，表示导入的符号是一个序号，该需要为函数RVA，缺点是不同平台的RVA可能不一样，有点是不需要额外存放函数名，节省了空间；&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;取成员AddressOfData，此时最高位为1，表示导入符号是一个名称，该值指向一个结构体，该结构体定义如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;typedef struct _IMAGE_IMPORT_BY_NAME {
+WORD Hint;
+CHAR Name[1];
+} IMAGE_IMPORT_BY_NAME, *PIMAGE_IMPORT_BY_NAME;&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;
+hint成员为符号序号，可以忽略，仅做参考，第二个成员是个柔性数组，存放符号名字符串。
+对照WinHex打开可执行文件的导入表位置0x610处：
+![image-20200503022406592](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503022406592.png)
+一个导入表结构体占0x14即20个字节（5个DWORD类型成员），在WinHex下每个导入表项占用一行4个字节，最后一个导入表项为0，因此这里的导入表有两项，先看第一个导入表项：
+第一个成员值为0x00002054，是个RVA，转为FA即为0x654，该地址下存放的是一系列的IMAGE\_THUNK\_DATA结构体，以0作为结构体数组的结尾：
+![image-20200503023002031](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503023002031.png)
+说明只有一项IMAGE\_THUNK\_DATA结构体，其值为0x0000205C，最高位为0，那么该值指向的就是IMAGE\_IMPORT\_BY\_NAME结构体，换算成FA就是0x65C，查看之：
+![image-20200503023156622](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503023156622.png)
+深色部分就是整个结构体数据，头两个字节为0x1B1，表示符号序号，可以忽略，重要的是其后面的字节直到0结尾的部分，ASCII码表示**MessageBoxA**，即为符号名。
+第二个第三个成员不重要，仅用作参考。
+第四个成员Name字段则是符号所在的模块名称，这里的值是0x0000206A，换算成FA即为0x66A：
+![image-20200503023706719](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503023706719.png)
+从0x66A处开始直到0结尾就表示符号所在的模块，这里是user32.dll，说明上面的函数需要通过这个动态库来加载，可以对该名称进行修改，把”.dll”删除也可以，前提是要填0，让系统知道字符串结尾，系统在loaddll的时候会自动补上”.dll”，否则会让系统找不到库。
+与第一个成员相同，指向的链表定义了针对Name成员这个动态库引入的所有导入函数，简称桥2：
+![image-20200503025228980](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503025228980.png)
+### 程序加载符号过程
+使用OD调试运行目标程序，系统首先将程序加载入模块基址（默认0x400000），前一个内存分页保存的是NT头信息，包含了导入表：
+![image-20200503034320928](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503034320928.png)
+系统找到导入表的位置的RVA是0x2010，那么VA就是0x402010，遍历0x402010处的导入表：
+![image-20200503034503057](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503034503057.png)
+每一个导入表项占20个字节，首先解析第一个导入表项的Name字段，获取模块名：
+![image-20200503034810893](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503034810893.png)
+Name字段的RVA是0x206A，VA就是0x40206A，在该地址下获取到模块名为user32.dll，通过LoadLibrary函数加载该Dll；接着通过第一个成员拿IMAGE\_THUNK\_DATA结构体数组，该结构体数组包含了函数名数组，同一个dll下导入的函数：
+![image-20200503035220552](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503035220552.png)
+第一个成员的RVA是0x2054，VA就是0x402054，这个数组以0结尾，那么只有一个函数需要导入，导入的是符号序号还是符号信息结构体看最高位，这里的值是0x0000205C，最高位为0，那么这个值就是包含函数名信息的IMAGE\_IMPORT\_BY\_NAME结构体，该结构体地址即VA为0x40205C（蓝框标出），忽略头两个字节，这个函数名为MessageBoxA，通过刚才加载的Dll，获取Dll的句柄通过GetProcAddress函数，获取到该函数在加载到程序中的地址，并且将该地址存放到最后一个成员地址下：
+![image-20200503035816691](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503035816691.png)
+这里最后一个成员即FirstThunk为0x2008，那么VA就是0x402008：
+![image-20200503035925179](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503035925179.png)
+这个地方就存放了函数加载到程序中的真实地址，如果还需要从该Dll中加载函数，加载出来的函数继续往后面存放，如果没有函数需要加载了，那么最后补零就可以了。
+在反汇编窗口查看0x73491CC0处的代码：
+![image-20200503040251655](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503040251655.png)
+这就是MessageBoxA的实现了；
+这样从一个Dll加载函数就完成了。
+紧接着，系统开始遍历第二个导入表项，首先取出需要加载的Dll：
+![image-20200503040434907](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503040434907.png)
+Dll名信息的RVA在0x2084处，VA为0x402084下：
+![image-20200503040549122](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503040549122.png)
+需要加载的Dll名为”kernel32.dll”，通过LoadLibrary加载该dll获取dll句柄，接着从第一个成员处获取需要加载的函数符号名数组，RVA为0x204C，VA为0x40204C:
+![image-20200503040743828](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503040743828.png)
+同样，该数组只有一个元素，那么说明只有一个函数需要在该dll中被加载，去RVA为0x2076的地址中获取函数名信息，同样需要换算成VA，为0x402076：
+![image-20200503040909647](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503040909647.png)
+前两个字节忽略，获取到的函数名”ExitProcess”，用已经获取的dll句柄通过GetProcAddress获取该函数加载到程序中的地址，然后存放入最后一个成员中，当然还是以数组的形式一直往该地址后面填充，最后一个成员的RVA为0x2000，那么VA为0x402000：
+![image-20200503041148622](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503041148622.png)
+查看该地址处的反汇编：
+![image-20200503041220394](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503041220394.png)
+这样又一个导入表项的所有应该导入的函数就被导入到进程的虚拟地址空间中了。
+接着系统又去导入表取出下一个导入表项：
+![image-20200503041339116](/2020/05/08/PE%E6%A0%BC%E5%BC%8F04/image-20200503041339116.png)
+但是会发现，最后一个是空的，那么就表示所有导入表项都已经加载到虚拟地址空间中了。
+因为导入表项的结构体最后加载到内存中后，第一个成员会被函数在内存中的VA替换掉，因此其实我们可以抹掉导入表的第一个成员，程序也是可以正常运行的。
+&lt;/code&gt;&lt;/pre&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F04/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式03</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F03/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F03/</guid><pubDate>Fri, 08 May 2020 13:40:06 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="节表"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F03/#节表" class="anchor-link" aria-label="节表"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;节表&lt;/h3&gt;
+&lt;p&gt;PE文件中所有节的属性都被定义在节表中，节表由一系列的IMAGE_SECTION_HEADER结构排列而成，每个结构用来描述一个节，结构的排列顺序和它们描述的节在文件中的排列顺序是一致的，全部有效结构的最后以一个空的IMAGE_SECTION_HEADER结构作为结束，所以节表中IMAGE_SECTION_HEADER结构数量等于节的数量+1。节表总是被存放在紧接着PE文件头的地方。&lt;/p&gt;
+&lt;p&gt;另外，节表中IMAGE_SECTION_HEADER结构的总数总是由PE文件头IMAGE_NT_HEADERS结构中的 FileHeader.NumberOfSections 字段来指定。&lt;/p&gt;
+&lt;p&gt;使用WinHex打开我们使用准备好的可执行文件，该程序只在程序启动时弹一个MessageBox，查看其NT头部：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501005354403.png" alt="image-20200501005354403"&gt;&lt;/p&gt;
+&lt;p&gt;这个0x0004就表示节表的数量，这里是4个，紧跟在NT头后面就是一个个节表结构体：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501005457301.png" alt="image-20200501005457301"&gt;&lt;/p&gt;
+&lt;p&gt;使用x64dbg查看一下该可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501005611679.png" alt="image-20200501005611679"&gt;&lt;/p&gt;
+&lt;p&gt;IMAGE_SECTION_HEADER的结构体定义如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="cp"&gt;#define IMAGE_SIZEOF_SHORT_NAME 8
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_SECTION_HEADER&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;BYTE&lt;/span&gt; &lt;span class="n"&gt;Name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;IMAGE_SIZEOF_SHORT_NAME&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt; &lt;span class="c1"&gt;//节表名
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="k"&gt;union&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;PhysicalAddress&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;VirtualSize&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;Misc&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 节表数据大小
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;VirtualAddress&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 节表RVA
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfRawData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 节在文件中对齐后的尺寸
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;PointerToRawData&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 节的起始数据在文件中的偏移
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;PointerToRelocations&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 在.obj文件中使用，指向重定位表指针
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;PointerToLinenumbers&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 行号标的位置（供调试用）
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfRelocations&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 重定位表个数(在obj文件中使用)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfLinenumbers&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 行号表中行号的数量
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Characteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 节的属性
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_SECTION_HEADER&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_SECTION_HEADER&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;对照上面WinHex的第二张图，以第一个节为例：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Name&lt;/strong&gt;：该字段为字节数组，长度为固定的8个字节，即节名由8位ASCII码组成，用以定义节名。多数区块名以“.”（0x2E）开头，实际上这个点不是必须的。这里为.text;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Misc&lt;/strong&gt;：是个联合体，一般使用VirtualSize成员，即节的大小，这是没有进行对齐处理的实际大小。这里是0x00000028;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;VirtualAddress&lt;/strong&gt;：节在装载到内存中的RVA地址。这个地址是按照内存页来对齐的，因此它的数值总是SectionAlignment的整数倍。这里是0x1000；&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;SizeOfRawData&lt;/strong&gt;：这个节在磁盘中所占大小，这个数值等于VitualSize字段的值按照FileAlignment值对齐以后的大小。这里是0x200;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;PointerToRawData&lt;/strong&gt;：这个节在磁盘文件中所处的位置，这个值时从文件头开始算起的偏移量。这里是0x400，在WinHex查看0x400的数据：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501011241942.png" alt="image-20200501011241942"&gt;&lt;/p&gt;
+&lt;p&gt;.text段实际上就是存放代码数据的段，这里存放就是代码的机器字节码，相对应的.data段存放的是全局数据，.rdata存放的是常量数据；&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Characteristics&lt;/strong&gt;：表示节的属性，同样在winnt.h的头文件下有定义：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501011531004.png" alt="image-20200501011531004"&gt;&lt;/p&gt;
+&lt;p&gt;这里是0x60000020，查头文件：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;#define IMAGE_SCN_CNT_CODE 0x00000020 // Section contains code.
+#define IMAGE_SCN_MEM_EXECUTE 0x20000000 // Section is executable.
+#define IMAGE_SCN_MEM_READ 0x40000000 // Section is readable.&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;
+表示该节包含了代码数据，且该节可读可执行。
+有了这些信息后，可以尝试修改可执行文件，增添一个节表，让可执行文件还可以正常执行。
+### 手动增加一个节
+winhex下可执行文件的节表后面全是0，我们可以在文件的0x250处新增一个节表，从0x2E开始复制一个节的数据（结构体大小为0x28，在winhex下占用两行半），然后ctrl+b覆盖0x250后的0x28个字节：
+![image-20200501013405887](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501013405887.png)
+数据大小暂时不用管，我们这里只是新增一个节，但是VirtualAddress字段需要修改，上一个节的该字段为0x4000，而相邻节相差SectionAlignment整数倍，上一个节数据不够0x1000，因此这里我们只需要在0x4000上加一个SectionAlignment就够了，这里需要修改为0x5000；然后是SizeOfRawData，这里是FileAlignment就可以了，设置为0x200；之后是PointerToRawData，在文件中的偏移，以FileAlignment对齐，上一个节的该字段为0xA00：
+![image-20200501013844460](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501013844460.png)
+一直到文件结尾：
+![image-20200501013902021](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501013902021.png)
+占用的是一个FileAlignment的磁盘空间；对于这个可执行文件来说，没有我们新节对应的磁盘空间，所以需要扩展文件，扩展的值也是以FileAlignment对齐，这里是0x200，那么就是0xC00到0xDF0：
+![image-20200501014132809](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501014132809.png)
+![image-20200501014154559](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501014154559.png)然后设置PointerToRawData字段：
+![image-20200501014317739](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501014317739.png)
+最后一个需要设置的字段为节的属性，与上一个节一样就可以了。
+设置完之后，还需要设置FILE\_HEADER的NumberOfSections字段：
+![image-20200501014731551](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501014731551.png)
+现在只有四个节，我们新增一个节之后需要将该字段修改为0x5；因为新增了一个节，那么还需要设置OPTIONAL\_HEADER的SizeOfImage字段，因为节是需要加载到内存中的，且节加载到内存中是以SectionAlignment对齐的，原程序的该字段值为：
+![image-20200501015036904](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501015036904.png)
+该值为0x5000，4个节占0x4000，再加一个头部占用的0x1000，就是0x5000；我们新增了一个节后，该值就需要修改为0x6000。
+这样就大致修改完成了，保存之，然后使用x64dbg看一下：
+![image-20200501015305589](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501015305589.png)
+可以发现已经新增上去了，双击修改后的可执行文件运行程序看一下：
+![image-20200501015352239](/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501015352239.png)
+也是可以运行的。
+### VA、RVA和FA
+VA：VirtualAddress，即程序加载到虚拟内存控件的虚拟地址；
+RVA：Relative VirtualAddress，即相对于模块基址的虚拟地址；
+FA（RAW或FOA）：FileAddress，即在文件中的偏移地址。
+VA与RVA满足下面的换算关系：
+```c
+RVA + ImageBase = VA
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;但是可能获取到的ImageBase不一定正确，可执行程序的该值一般获取到ImageBase是有效的，但是Dll的该值却需要在加载到可执行文件中才准确有效。&lt;/p&gt;
+&lt;p&gt;VA与FA的换算关系则较为复杂，首先需要查找VA所在的节区，然后计算出VA相对于该节区的量，就是RVA了。&lt;/p&gt;
+&lt;p&gt;使用x64dbg打开一个可执行文件，随便找一个VA：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501022856076.png" alt="image-20200501022856076"&gt;&lt;/p&gt;
+&lt;p&gt;查找0x40100E所在的节区：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501022945351.png" alt="image-20200501022945351"&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;RVA&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mh"&gt;0x40100E&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;VA&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mh"&gt;0x401000&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="err"&gt;所在节区&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mh"&gt;0xE&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;该节区的VA为0x401000，ImageBase为0x400000，那么该节区的RVA为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;RVA&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mh"&gt;0x401000&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mh"&gt;0x400000&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mh"&gt;0x1000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;查看WinHex该程序的RVA为0x1000的节表信息：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501023814006.png" alt="image-20200501023814006"&gt;&lt;/p&gt;
+&lt;p&gt;进而获取到PointerToRawData的值为0x400，再拿这个值与0x40100E的RVA（即0xE）相加后获取到FA为0x40E，使用WinHex查看之：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F03/image-20200501024034335.png" alt="image-20200501024034335"&gt;&lt;/p&gt;
+&lt;p&gt;与x64dbg获取到的数据值一致。&lt;/p&gt;
+&lt;p&gt;那么VA与FA的关系可以满足如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-c" data-lang="c"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;RVA&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="err"&gt;节区&lt;/span&gt;&lt;span class="n"&gt;VA&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;ImageBase&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;FA&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;VA&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;VA所在节区地址&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="err"&gt;查&lt;/span&gt;&lt;span class="n"&gt;RAV所在节的PointerToRawData&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F03/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F03/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式02</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F02/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F02/</guid><pubDate>Fri, 08 May 2020 13:38:02 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;p&gt;上一节用到了IMAGE_NT_HEADER结构体，该结构体中包含了IMAGE_FILE_HEADER和IMAGE_OPTIONAL_HEADER，其实IMAGE_FILE_HEADER还远不够来描述PE文件的属性，因此这些属性在IMAGE_OPTIONAL_HEADER中进行了定义，两个结构体联合起来，构成一个完整的”PE文件结构”。&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;typedef struct _IMAGE_OPTIONAL_HEADER {
+//
+// Standard fields.
+//
+WORD Magic;
+BYTE MajorLinkerVersion;
+BYTE MinorLinkerVersion;
+DWORD SizeOfCode;
+DWORD SizeOfInitializedData;
+DWORD SizeOfUninitializedData;
+DWORD AddressOfEntryPoint;
+DWORD BaseOfCode;
+DWORD BaseOfData;
+//
+// NT additional fields.
+//
+DWORD ImageBase;
+DWORD SectionAlignment;
+DWORD FileAlignment;
+WORD MajorOperatingSystemVersion;
+WORD MinorOperatingSystemVersion;
+WORD MajorImageVersion;
+WORD MinorImageVersion;
+WORD MajorSubsystemVersion;
+WORD MinorSubsystemVersion;
+DWORD Win32VersionValue;
+DWORD SizeOfImage;
+DWORD SizeOfHeaders;
+DWORD CheckSum;
+WORD Subsystem;
+WORD DllCharacteristics;
+DWORD SizeOfStackReserve;
+DWORD SizeOfStackCommit;
+DWORD SizeOfHeapReserve;
+DWORD SizeOfHeapCommit;
+DWORD LoaderFlags;
+DWORD NumberOfRvaAndSizes;
+IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
+} IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;如上就是可选头的结构体定义。使用CFF Explorer和WinHex来对照分析一个可执行文件，使用CFF随便打开一个exe文件，选择Optional Header项：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430054648968.png" alt="image-20200430054648968"&gt;&lt;/p&gt;
+&lt;p&gt;第一个成员Magic位于文件的D0偏移处，查看WinHex：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430054736322.png" alt="image-20200430054736322"&gt;&lt;/p&gt;
+&lt;p&gt;Magic的值为0x10b，其实该值在winnt.h中有定义：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430054826024.png" alt="image-20200430054826024"&gt;&lt;/p&gt;
+&lt;p&gt;0x10b表示该程序是32位程序，0x20b则表示64位程序，而0x107则代表了是嵌入式程序，这个值是不可以修改的，修改完之后程序就无法运行，因为根据位数的不同，解析PE文件的方式也有所差别。&lt;/p&gt;
+&lt;p&gt;并且在winnt.h的头文件下还可以发现三个结构体的前8个成员是一样定义的：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055153620.png" alt="image-20200430055153620"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055205878.png" alt="image-20200430055205878"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055218255.png" alt="image-20200430055218255"&gt;&lt;/p&gt;
+&lt;p&gt;第二、三个成员是MajorLinkerVersion、MinorLinkerVersion表示链接程序是使用的链接去主副版本号，查看CFF：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055412464.png" alt="image-20200430055412464"&gt;&lt;/p&gt;
+&lt;p&gt;表示链接器的版本号为5.12，而链接该程序的RadASM的链接器版本号正是该值：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055811560.png" alt="image-20200430055811560"&gt;&lt;/p&gt;
+&lt;p&gt;这个值可以修改，不会影响程序正常运行。&lt;/p&gt;
+&lt;p&gt;后面的SizeOfCode成员的值表示所有含代码的节的总大小，CFF显示为0x200：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430055947661.png" alt="image-20200430055947661"&gt;&lt;/p&gt;
+&lt;p&gt;实际上代码占用不到0x200个字节：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430063726569.png" alt="image-20200430063726569"&gt;&lt;/p&gt;
+&lt;p&gt;这是因为有个对齐属性在，可以看到还有个属性是文件对齐属性：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430065908444.png" alt="image-20200430065908444"&gt;&lt;/p&gt;
+&lt;p&gt;其值为0x200，则表示一个段在文件中不超过0x200字节的按两百字节算，超过0x200则按0x200的整数倍分配。&lt;/p&gt;
+&lt;p&gt;然后是SizeOfInitializedData字段，该字段表示已初始化的数据大小：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070056704.png" alt="image-20200430070056704"&gt;&lt;/p&gt;
+&lt;p&gt;以及未初始化的数据大小：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070224640.png" alt="image-20200430070224640"&gt;&lt;/p&gt;
+&lt;p&gt;这三个值可以随便改动，不会影响程序的正常运行。&lt;/p&gt;
+&lt;p&gt;然后是&lt;strong&gt;AddressOfEntryPoint&lt;/strong&gt;字段，该字段表示程序的入口点：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070401455.png" alt="image-20200430070401455"&gt;&lt;/p&gt;
+&lt;p&gt;而实际上程序的入口点在0x00401000的位置：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070522043.png" alt="image-20200430070522043"&gt;&lt;/p&gt;
+&lt;p&gt;这里就有个RVA、VA、FA的概念区分，&lt;strong&gt;AddressOfEntryPoint&lt;/strong&gt;字段是RVA，表示相对虚拟地址，相对于ImageBase字段的地址：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070629430.png" alt="image-20200430070629430"&gt;&lt;/p&gt;
+&lt;p&gt;ImageBase字段表示可执行文件加载进内存时镜像的第一个字节的首选地址，其必须是64K的倍数，DLL默认是0x10000000H。Windows CE的EXE默认是0x10000。Windows系列默认为0x400000：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430071807421.png" alt="image-20200430071807421"&gt;&lt;/p&gt;
+&lt;p&gt;而相对于ImageBase的&lt;strong&gt;AddressOfEntryPoint&lt;/strong&gt;才是真正的程序入口点，可以修改该入口点的值为文件中的其他位置，但是要确保最后跳回到OEP，这样就不会影响到程序的正常操作。&lt;/p&gt;
+&lt;p&gt;而VA在这里就是0x00401000，而FA则是文件地址，例如WinHex可以看到的最左侧的数据偏移：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430070849151.png" alt="image-20200430070849151"&gt;&lt;/p&gt;
+&lt;p&gt;BaseOfCode字段表示代码基址， 当镜像被加载进内存时代码节的开头RVA。必须是SectionAlignment的整数倍。&lt;/p&gt;
+&lt;p&gt;BaseOfData字段表示数据基址，当镜像被加载进内存时数据结构的开头RVA，必须是SectionAlignment的整数倍。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430071409769.png" alt="image-20200430071409769"&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430071359837.png" alt="image-20200430071359837"&gt;&lt;/p&gt;
+&lt;p&gt;SectionAlignment表示当加载进内存时节的对齐值（以字节计），其必须&amp;gt;= FileAlignment 。&lt;/p&gt;
+&lt;p&gt;FileAlignment 为文件对齐粒度， 用来对齐镜像文件的节中的原始数据的对齐因子（以字节计）。&lt;/p&gt;
+&lt;p&gt;这两个值最好不要修改，与系统挂钩，修改了之后系统不承认就会导致程序运行不起来或者崩溃。&lt;/p&gt;
+&lt;p&gt;然后是 MajorOperatingSystemVersion ，为主系统主版本号， MinorOperatingSystemVersion 为主系统此版本号， MajorImageVersion ，为镜像的主板本号， MinorImageVersion 为镜像的次版本号。这几个值可以随意修改，不影响程序正常运行。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430072307003.png" alt="image-20200430072307003"&gt;&lt;/p&gt;
+&lt;p&gt;然后是 MajorSubsystemVersion 为子系统的主板本号，可以修改，但可能会导致程序崩溃，MinorSubsystemVersion为子系统此版本号。&lt;/p&gt;
+&lt;p&gt;CheckSum字段为 镜像文件的校验和。计算校验和的算法被合并到了Imagehlp.DLL 中。以下程序在加载时被校验以确定其是否合法：所有的驱动程序、任何在引导时被加载的DLL以及加载进关键Windows进程中的DLL。&lt;/p&gt;
+&lt;p&gt;Subsystem字段为程序类型：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430072716897.png" alt="image-20200430072716897"&gt;&lt;/p&gt;
+&lt;p&gt;值为2表示Windows窗口程序，如果改成3就是控制台程序。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430072841671.png" alt="image-20200430072841671"&gt;&lt;/p&gt;
+&lt;p&gt;DllCharacteristics 为Dll标识，如果该PE文件为DLL的话：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430072927230.png" alt="image-20200430072927230"&gt;&lt;/p&gt;
+&lt;p&gt;可执行程序为0：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430073006962.png" alt="image-20200430073006962"&gt;&lt;/p&gt;
+&lt;p&gt;SizeOfStackReserve 为栈保留大小，默认是1MB。&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F02/image-20200430073143105.png" alt="image-20200430073143105"&gt;&lt;/p&gt;
+&lt;p&gt;SizeOfStackCommit 为栈提交大小，初始提交的栈大小，默认4KB。&lt;/p&gt;
+&lt;p&gt;SizeOfHeapReserve 堆保留大小，最大堆大小，编译器分配，默认是1MB。&lt;/p&gt;
+&lt;p&gt;SizeOfHeapCommit 堆提交大小，初始提交的局部堆控件大小，默认4KB。&lt;/p&gt;
+&lt;p&gt;LoaderFlags 保留字段，必须为0。&lt;/p&gt;
+&lt;p&gt;NumberOfRvaAndSizes 目录项数目，只能为16。&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F02/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F02/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item><item><title>
+PE格式01</title><link>https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/</link><guid isPermaLink="true">https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/</guid><pubDate>Fri, 08 May 2020 13:11:28 +0800</pubDate><author>reuixiy@gmail.com (reuixiy)</author><copyright>[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)</copyright><description>
+&lt;h3 id="介绍"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/#介绍" class="anchor-link" aria-label="介绍"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;介绍&lt;/h3&gt;
+&lt;p&gt;PE格式是Windows可执行文件的文件格式，通常该类型格式以.exe作为后缀，而linux、iOS、安卓等等这些系统平台都有其对应的可执行文件格式，这里我们主要介绍PE格式。&lt;/p&gt;
+&lt;p&gt;Windows操作系统家族最近增加的Windows NT为开发环境和应用程序本身带来了很大的改变，这之中一个最为重大的当属PE文件格式了。新的PE文件格式主要来自于UNIX操作系统所通用的COFF（Common Object File Format）规范，同时为了保证与旧版本MS-DOS及Windows操作系统的兼容，PE文件格式也保留了MS-DOS中的MZ头部，在16进制下为0x4D5A。&lt;/p&gt;
+&lt;h3 id="pe文件结构"&gt;&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/#pe文件结构" class="anchor-link" aria-label="pe文件结构"&gt;&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon anchor-icon"&gt;&lt;path d="M326.612 185.391c59.747 59.809 58.927 155.698.36 214.59-.11.12-.24.25-.36.37l-67.2 67.2c-59.27 59.27-155.699 59.262-214.96 0-59.27-59.26-59.27-155.7 0-214.96l37.106-37.106c9.84-9.84 26.786-3.3 27.294 10.606.648 17.722 3.826 35.527 9.69 52.721 1.986 5.822.567 12.262-3.783 16.612l-13.087 13.087c-28.026 28.026-28.905 73.66-1.155 101.96 28.024 28.579 74.086 28.749 102.325.51l67.2-67.19c28.191-28.191 28.073-73.757 0-101.83-3.701-3.694-7.429-6.564-10.341-8.569a16.037 16.037 0 0 1-6.947-12.606c-.396-10.567 3.348-21.456 11.698-29.806l21.054-21.055c5.521-5.521 14.182-6.199 20.584-1.731a152.482 152.482 0 0 1 20.522 17.197zM467.547 44.449c-59.261-59.262-155.69-59.27-214.96 0l-67.2 67.2c-.12.12-.25.25-.36.37-58.566 58.892-59.387 154.781.36 214.59a152.454 152.454 0 0 0 20.521 17.196c6.402 4.468 15.064 3.789 20.584-1.731l21.054-21.055c8.35-8.35 12.094-19.239 11.698-29.806a16.037 16.037 0 0 0-6.947-12.606c-2.912-2.005-6.64-4.875-10.341-8.569-28.073-28.073-28.191-73.639 0-101.83l67.2-67.19c28.239-28.239 74.3-28.069 102.325.51 27.75 28.3 26.872 73.934-1.155 101.96l-13.087 13.087c-4.35 4.35-5.769 10.79-3.783 16.612 5.864 17.194 9.042 34.999 9.69 52.721.509 13.906 17.454 20.446 27.294 10.606l37.106-37.106c59.271-59.259 59.271-155.699.001-214.959z"/&gt;&lt;/svg&gt;&lt;/a&gt;PE文件结构&lt;/h3&gt;
+&lt;p&gt;PE文件格式被组织为一个线性的数据流，其由一个MS-DOS头部开始，接着是一个是模式的程序残余以及一个PE文件标志，这之后紧接着PE文件头（IMAGE_HEADER）和可选头部（Optional Header）。这之后是所有的段头部，段头部之后跟随着所有的段实体。文件的结束处时一些其他的区域，其中是一些混杂的信息，包括重分配信息、符号表信息、行号信息以及字串表数据，如下图所示：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/1330593219.gif" alt="img"&gt;&lt;/p&gt;
+&lt;p&gt;使用汇编编写如下程序，并构建为可执行文件：&lt;/p&gt;
+&lt;pre tabindex="0"&gt;&lt;code&gt;.data
+g_szHello db &amp;#39;Hello World!&amp;#39;, 0
+g_szTitle db &amp;#39;Hello&amp;#39;, 0
+.code
+_main:
+invoke MessageBox, NULL, offset g_szHello, offset g_szTitle, MB_OK
+invoke ExitProcess, 0
+ret
+end _main
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;编译链接成为可执行文件后发送到winhex查看可执行文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428223948719.png" alt="image-20200428223948719"&gt;&lt;/p&gt;
+&lt;p&gt;红框就是MS-DOS头部结构体数据，对照其结构体：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_DOS_HEADER&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="c1"&gt;// DOS系统下 .EXE 头部
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_magic&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 魔数 Magic Num
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_cblp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Bytes on last page of file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_cp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Pages in file
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_crlc&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Relocations
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_cparhdr&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Size of header in paragraphs
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_minalloc&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Minimum extra paragraphs needed
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_maxalloc&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Maximum extra paragraphs needed
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_ss&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 初始 段寄存器SS 值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_sp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 初始 SP 值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_csum&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Checksum
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_ip&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 初始 IP 值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_cs&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 初始 (相对) CS 值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_lfarlc&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// File address of relocation table
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_ovno&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// Overlay number
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_res&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt; &lt;span class="c1"&gt;// Reserved words
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_oemid&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// OEM identifier (for e_oeminfo)
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_oeminfo&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// OEM information; e_oemid specific
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;e_res2&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;];&lt;/span&gt; &lt;span class="c1"&gt;// Reserved words
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;LONG&lt;/span&gt; &lt;span class="n"&gt;e_lfanew&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="c1"&gt;// 新可执行文件头部地址值
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_DOS_HEADER&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_DOS_HEADER&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这个结构体总共占用64（0x40）个字节（其中包含WORD类型的数组）。&lt;/p&gt;
+&lt;p&gt;在这64个字节之后就是&lt;strong&gt;实模式残余程序&lt;/strong&gt;，这部分是程序只在DOS系统下才可以运行，并且运行后只会显示一串字符串，这里显示的字符串是：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;This program cannot be run in DOS mode.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428225358662.png" alt="image-20200428225358662"&gt;&lt;/p&gt;
+&lt;p&gt;字符串数据前面与DOS头部后面的这一部分就是汇编代码，用于输出一串字符串。&lt;/p&gt;
+&lt;p&gt;MS-DOS头部在Windows系统下可用的只有两个字段，一个是&lt;strong&gt;e_magic&lt;/strong&gt;，另一个是&lt;strong&gt;e_lfanew&lt;/strong&gt;，两个字段修改之后程序就无法运行，中间的部分则可以随意修改，不过修改之后可能在DOS系统下就无法正常运行。&lt;/p&gt;
+&lt;p&gt;对于e_lfanew字段，该字段的Windows可执行文件头部的起始偏移地址：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428225749692.png" alt="image-20200428225749692"&gt;&lt;/p&gt;
+&lt;p&gt;这里是0x000000B8，从这个地址开始出的偏移就是NT_HEADER结构体开始的位置，32位程序的NT_HEADER类型为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_NT_HEADERS&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Signature&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;IMAGE_FILE_HEADER&lt;/span&gt; &lt;span class="n"&gt;FileHeader&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;IMAGE_OPTIONAL_HEADER32&lt;/span&gt; &lt;span class="n"&gt;OptionalHeader&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_NT_HEADERS32&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_NT_HEADERS32&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;64为程序的NT_HEADER则为：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_NT_HEADERS64&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;Signature&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;IMAGE_FILE_HEADER&lt;/span&gt; &lt;span class="n"&gt;FileHeader&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;IMAGE_OPTIONAL_HEADER64&lt;/span&gt; &lt;span class="n"&gt;OptionalHeader&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_NT_HEADERS64&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_NT_HEADERS64&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这里我们主要关注32位程序，而IMAGE_FILE_HEADER结构体如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="k"&gt;typedef&lt;/span&gt; &lt;span class="k"&gt;struct&lt;/span&gt; &lt;span class="nc"&gt;_IMAGE_FILE_HEADER&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;Machine&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfSections&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;TimeDateStamp&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;PointerToSymbolTable&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;DWORD&lt;/span&gt; &lt;span class="n"&gt;NumberOfSymbols&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;SizeOfOptionalHeader&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &lt;span class="n"&gt;WORD&lt;/span&gt; &lt;span class="n"&gt;Characteristics&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="p"&gt;}&lt;/span&gt; &lt;span class="n"&gt;IMAGE_FILE_HEADER&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;PIMAGE_FILE_HEADER&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;对照Winhex读取到的可执行文件数据：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428231028368.png" alt="image-20200428231028368"&gt;&lt;/p&gt;
+&lt;p&gt;0xB8处的头四个字节就是Signature，这个signature用ASCII码表示就是”PE\0\0” ，16进制就是0x50450000；接着就是_IMAGE_FILE_HEADER开始的部分，头两个字节是结构体成员Machine，该Machine字段值为0x014c，可以在winnt.h头文件下查看到该值代表的意义：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428231328372.png" alt="image-20200428231328372"&gt;&lt;/p&gt;
+&lt;p&gt;该值表示编译的目标机器类型，说明编译链接时我的电脑CPU类型为英特尔386类型的；接着是NumberOfSections字段，占用的2个字节，这里是0x04，表示有4个节；然后是时间戳，占4个字节，这里的值是0x5EA83BE1；接下来的两个字段 PointerToSymbolTable 和 NumberOfSymbols 是给其他系统使用的字段，表示符号表字符串的地址值和符号格式，Windows系统下有pdb文件，所以不需要用到这两个字段；接下来的字段是 SizeOfOptionalHeader ，表示可选头部（IMAGE_OPTIONAL_HEADER32）结构体的大小，为什么不用sizeof(IMAGE_OPTIONAL_HEADER32)得出结构体大小呢？是因为可能该结构体大小不是固定的，是由_IMAGE_FILE_HEADER的SizeOfOptionalHeader 成员决定的；最后一个字段是 Characteristics，表示文件的属性，这里是0x10F：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428232123333.png" alt="image-20200428232123333"&gt;&lt;/p&gt;
+&lt;p&gt;查看winnt.h头文件：&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://joshuachenn.github.io/2020/05/08/PE%E6%A0%BC%E5%BC%8F01/image-20200428232251603.png" alt="image-20200428232251603"&gt;&lt;/p&gt;
+&lt;p&gt;表示文件属性由这5种属性组成，0x1 |= 0x2 |= 0x4 |= 0x8 |= 0x100 == 0x10F。&lt;/p&gt;
+&lt;p&gt;结构体的这些成员能不能修改呢？可以参考如下：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;div class="table-container"&gt;&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-cpp" data-lang="cpp"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;//IMAGE_DOS_HEADER
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;//IMAGE_NT_HEADERS32 //COFF
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// IMAGE_FILE_HEADER
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// WORD Machine; //指令集 不能乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// WORD NumberOfSections; //节表数量 重要 不能乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// DWORD TimeDateStamp; //乱改 参考
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// DWORD PointerToSymbolTable; //符号表位置 乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// DWORD NumberOfSymbols; //符号表数量 乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// WORD SizeOfOptionalHeader; //选项头大小 不能乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;// WORD Characteristics; //不能乱改
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;blockquote&gt;
+&lt;p&gt;阅读原文：&lt;a href="https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/" target="_blank" rel="noopener"&gt;https://joshuachenn.github.io/2020/05/08/pe%E6%A0%BC%E5%BC%8F01/&lt;/a&gt;&lt;br&gt;
+博客公告：博客现已开通邮件订阅，欢迎&lt;a href="https://username.substack.com" target="_blank" rel="noopener"&gt;通过 Substack 订阅&lt;/a&gt;支持我的创作！&lt;/p&gt;
+&lt;/blockquote&gt;</description></item></channel></rss>
